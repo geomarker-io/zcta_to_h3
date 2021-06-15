@@ -5,6 +5,12 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
+## Using the ZCTA to h3 Crosswalk
+
+[ZCTA to h3 crosswalk PM2.5 example](https://geomarker.io/zcta_to_h3)
+
+## Creating the ZCTA to h3 Crosswalk
+
 1. Get overlapping resolution 5 h3 cell(s)
 
 ![](figs/45229_res_5.png)

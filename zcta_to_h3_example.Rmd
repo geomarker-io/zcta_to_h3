@@ -1,0 +1,71 @@
+---
+title: "ZCTA to h3 Example"
+output: 
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+```
+
+Suppose we want to find the estimated daily PM2.5 based on a patient's ZCTA.
+
+1. Start with data containing ZCTA and start and end dates for each ZCTA.
+
+```{r}
+library(tidyverse)
+d <- tibble::tribble(
+  ~zcta, ~date, 
+  "45229", "2018-06-30", 
+  "45229", "2019-01-01", 
+  "45220", "2019-06-30"
+) %>% 
+  mutate(start_date = as.Date(date),
+         end_date = as.Date(date)) %>% 
+  select(-date)
+
+d
+```
+
+We can use the ZCTA to h3 crosswalk to covert our h3 gridded PM2.5 predictions to ZCTAs.
+
+2. Download the ZCTA to h3 crosswalk file from s3.
+
+```{r}
+zcta_to_h3 <- s3::s3_get('s3://geomarker/h3/zcta_to_h3/zcta_2010_to_h3.rds') %>% 
+  readRDS()
+```
+
+3. Join your data and the crosswalk file by `zcta`. 
+
+```{r}
+d <- left_join(d, zcta_to_h3, by = 'zcta')
+d
+```
+
+4. Use `addPmData::add_pm` with `type = 'h3'` to add predicted PM for each h3 identifier. 
+
+```{r}
+# changes not merged yet, will be v0.0.4 
+# remotes::install_github('geomarker-io/addPmData@h3-to-pm')
+library(addPmData)
+d <- add_pm(d, type = 'h3')
+d
+```
+
+5. Multiply the predicted PM by the weights. 
+
+```{r}
+d <- d %>% 
+  mutate(pm_pred_wt = weight*pm_pred)
+```
+
+6. Sum the product for each zcta-date combination to obtain weighted predicted PM. 
+
+```{r}
+d %>% 
+  group_by(zcta, date) %>% 
+  summarize(pm_pred_wt = sum(pm_pred_wt))
+```
+
